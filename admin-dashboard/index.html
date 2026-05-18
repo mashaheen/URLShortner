@@ -490,9 +490,25 @@
     const closeModalButton = document.getElementById("closeModalButton");
 
     let urls = [];
+    const adminKeyPattern = /^[\x21-\x7e]+$/;
 
     function getAdminKey() {
-      return localStorage.getItem(adminKeyStorageName);
+      return localStorage.getItem(adminKeyStorageName) || "";
+    }
+
+    function isValidAdminKey(value) {
+      return adminKeyPattern.test(value);
+    }
+
+    function getValidAdminKey() {
+      const adminKey = getAdminKey();
+
+      if (!isValidAdminKey(adminKey)) {
+        showUnlock();
+        throw new Error("Admin key must use visible ASCII characters only.");
+      }
+
+      return adminKey;
     }
 
     function showError(message) {
@@ -522,11 +538,13 @@
     }
 
     async function adminFetch(path, options = {}) {
+      const adminKey = getValidAdminKey();
+
       const response = await fetch(`${API_BASE}${path}`, {
         ...options,
         headers: {
           ...(options.headers || {}),
-          "x-admin-key": getAdminKey(),
+          "x-admin-key": adminKey,
         },
       });
 
@@ -718,7 +736,16 @@
 
     unlockForm.addEventListener("submit", (event) => {
       event.preventDefault();
-      localStorage.setItem(adminKeyStorageName, adminKeyInput.value);
+      const adminKey = adminKeyInput.value.trim();
+
+      if (!isValidAdminKey(adminKey)) {
+        showError("Admin key must use visible ASCII characters only.");
+        adminKeyInput.focus();
+        return;
+      }
+
+      clearError();
+      localStorage.setItem(adminKeyStorageName, adminKey);
       loadDashboard();
     });
 
