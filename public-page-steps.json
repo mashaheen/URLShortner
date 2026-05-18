@@ -1,0 +1,123 @@
+{
+  "title": "Public URL Shortening Page Implementation Steps",
+  "source": "url-shortener-plan.md",
+  "steps": [
+    {
+      "id": 1,
+      "title": "Create frontend folder",
+      "details": [
+        "Create the public-page folder."
+      ],
+      "paths": [
+        "public-page/"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Create page file",
+      "details": [
+        "Create public-page/index.html."
+      ],
+      "paths": [
+        "public-page/index.html"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Use standalone static frontend",
+      "details": [
+        "Use plain HTML, CSS, and Vanilla JavaScript.",
+        "Do not use a frontend framework.",
+        "The file should be openable directly in a browser during development."
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Apply visual design",
+      "details": [
+        "Use a dark background.",
+        "Use a minimal typographic style.",
+        "Use a single centered card layout."
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Add UI elements",
+      "details": [
+        "Add page title: Paste your URL here.",
+        "Add one full-width text input.",
+        "Use placeholder: https://your-long-url.com/....",
+        "Add a Shorten button.",
+        "Add a result area hidden by default.",
+        "Show the generated short URL as a clickable link.",
+        "Add a Copy button.",
+        "Add an error message area for invalid URLs."
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Add API configuration",
+      "details": [
+        "Define const API_BASE = \"http://localhost:3000\" at the top of the script block.",
+        "Use API_BASE for all fetch calls."
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Implement submit behavior",
+      "details": [
+        "On Shorten button click, read the input value.",
+        "Also submit when the user presses Enter.",
+        "Check that the value starts with http:// or https://.",
+        "Show an inline error if validation fails.",
+        "POST to `${API_BASE}/shorten` with JSON body `{ originalUrl }`.",
+        "Send the Content-Type: application/json header."
+      ],
+      "endpoint": {
+        "method": "POST",
+        "path": "/shorten",
+        "body": {
+          "originalUrl": "https://example.com"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Handle API response",
+      "details": [
+        "On success, show the returned shortUrl.",
+        "Display shortUrl as a clickable link.",
+        "On failure, show the API error message."
+      ],
+      "successResponseExample": {
+        "shortUrl": "http://localhost:3000/abc1234",
+        "shortCode": "abc1234"
+      }
+    },
+    {
+      "id": 9,
+      "title": "Implement copy behavior",
+      "details": [
+        "Use navigator.clipboard.writeText(shortUrl).",
+        "Change the Copy button label to Copied! after copying."
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Ensure backend dependencies exist",
+      "details": [
+        "The backend must expose POST /shorten.",
+        "The createShortUrl controller must return shortUrl and shortCode.",
+        "cors() must be enabled in backend/server.js so the static page can call the API."
+      ],
+      "backendRequirements": [
+        "POST /shorten route",
+        "createShortUrl controller response includes shortUrl and shortCode",
+        "cors middleware enabled"
+      ]
+    }
+  ]
+}

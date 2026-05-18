@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>URL Shortener</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #0d1117;
+      color: #f0f6fc;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .card {
+      width: min(100%, 480px);
+      padding: 32px;
+      border: 1px solid #30363d;
+      border-radius: 18px;
+      background: #161b22;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+    }
+
+    h1 {
+      margin: 0 0 24px;
+      font-size: clamp(28px, 6vw, 42px);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      font-weight: 700;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+      color: #8b949e;
+      font-size: 14px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      background: #0d1117;
+      color: #f0f6fc;
+      font: inherit;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #58a6ff;
+      box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.18);
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      background: #238636;
+      color: #ffffff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .shorten-button {
+      width: 100%;
+      margin-top: 14px;
+      padding: 14px 18px;
+    }
+
+    .result {
+      display: none;
+      margin-top: 22px;
+      padding: 14px;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      background: #0d1117;
+    }
+
+    .result.visible {
+      display: block;
+    }
+
+    .result-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .result a {
+      min-width: 0;
+      flex: 1;
+      color: #58a6ff;
+      overflow-wrap: anywhere;
+    }
+
+    .copy-button {
+      padding: 10px 14px;
+      background: #30363d;
+      white-space: nowrap;
+    }
+
+    .error {
+      min-height: 20px;
+      margin-top: 12px;
+      color: #ff7b72;
+      font-size: 14px;
+    }
+
+    @media (max-width: 520px) {
+      .card {
+        padding: 24px;
+      }
+
+      .result-row {
+        align-items: stretch;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Paste your URL here.</h1>
+
+    <label for="url-input">Long URL</label>
+    <input id="url-input" type="url" placeholder="https://your-long-url.com/...." autocomplete="url">
+    <button class="shorten-button" id="shorten-button" type="button">Shorten</button>
+
+    <p class="error" id="error-message" aria-live="polite"></p>
+
+    <section class="result" id="result" aria-live="polite">
+      <label>Short URL</label>
+      <div class="result-row">
+        <a id="short-url" href="#" target="_blank" rel="noopener noreferrer">https://example.com/abc123</a>
+        <button class="copy-button" id="copy-button" type="button">Copy</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = "http://localhost:3000";
+
+    const urlInput = document.getElementById('url-input');
+    const shortenButton = document.getElementById('shorten-button');
+    const errorMessage = document.getElementById('error-message');
+    const result = document.getElementById('result');
+    const shortUrlLink = document.getElementById('short-url');
+    const copyButton = document.getElementById('copy-button');
+
+    async function shortenUrl() {
+      const originalUrl = urlInput.value.trim();
+
+      errorMessage.textContent = '';
+      result.classList.remove('visible');
+      copyButton.textContent = 'Copy';
+
+      if (!originalUrl.startsWith('http://') && !originalUrl.startsWith('https://')) {
+        errorMessage.textContent = 'Enter a valid URL that starts with http:// or https://.';
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/shorten`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ originalUrl }),
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          errorMessage.textContent = data.error || 'Could not shorten this URL.';
+          return;
+        }
+
+        shortUrlLink.href = data.shortUrl;
+        shortUrlLink.textContent = data.shortUrl;
+        result.classList.add('visible');
+      } catch {
+        errorMessage.textContent = 'Could not reach the shortening service.';
+      }
+    }
+
+    shortenButton.addEventListener('click', shortenUrl);
+
+    copyButton.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(shortUrlLink.href);
+      copyButton.textContent = 'Copied!';
+    });
+
+    urlInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        shortenUrl();
+      }
+    });
+  </script>
+</body>
+</html>
