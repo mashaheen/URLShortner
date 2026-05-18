@@ -26,6 +26,21 @@
       "phase": 5,
       "title": "Controllers",
       "summary": "Created public and admin controllers for short URL creation, custom slugs, redirects, URL management, per-URL stats, and global stats."
+    },
+    {
+      "phase": 6,
+      "title": "Routes",
+      "summary": "Created public and admin route modules, with adminAuth applied to all admin routes."
+    },
+    {
+      "phase": 7,
+      "title": "Main Server",
+      "summary": "Created backend/server.js with dotenv, MongoDB connection, Express JSON parsing, CORS, route mounting, a global error handler, and startup on the configured port."
+    },
+    {
+      "phase": 8,
+      "title": "Backend Safety and Security Checklist",
+      "summary": "Verified backend security requirements including environment-based admin key usage, admin route protection, URL validation, custom slug restrictions, unique shortCode indexing, collision retries, safe error responses, and CORS."
     }
   ],
   "verification": [
@@ -33,6 +48,9 @@
     "Docker container urlshortener-mongo was verified running.",
     "Url model loaded successfully with Node.",
     "adminAuth middleware loaded successfully with Node.",
-    "Public and admin controller modules loaded successfully with Node."
+    "Public and admin controller modules loaded successfully with Node.",
+    "Public and admin route modules loaded successfully with Node.",
+    "backend/server.js passed node --check syntax verification.",
+    "Phase 8 backend safety and security checklist completed by file review and targeted searches."
   ]
 }
