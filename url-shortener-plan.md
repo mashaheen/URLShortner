@@ -20,54 +20,69 @@
 
 ## Project Structure
 
+Three separate folders under a single root. Each is independently runnable.
+
 ```
 url-shortener/
-├── docker-compose.yml
-├── .env
-├── .env.example
-├── .gitignore
-├── package.json
-├── server.js
-├── middleware/
-│   └── adminAuth.js
-├── models/
-│   └── Url.js
-├── routes/
-│   ├── public.js
-│   └── admin.js
-├── controllers/
-│   ├── publicController.js
-│   └── adminController.js
-└── public/
-    ├── index.html          ← URL submission page
-    └── admin/
-        └── index.html      ← Admin dashboard
+├── docker-compose.yml          ← MongoDB only, at root level
+├── .gitignore                  ← root-level, covers all subfolders
+├── README.md
+│
+├── backend/                    ← Express API server
+│   ├── package.json
+│   ├── .env
+│   ├── .env.example
+│   ├── server.js
+│   ├── middleware/
+│   │   └── adminAuth.js
+│   ├── models/
+│   │   └── Url.js
+│   ├── routes/
+│   │   ├── public.js
+│   │   └── admin.js
+│   └── controllers/
+│       ├── publicController.js
+│       └── adminController.js
+│
+├── public-page/                ← URL submission page (static)
+│   └── index.html
+│
+└── admin-dashboard/            ← Admin dashboard (static)
+    └── index.html
 ```
+
+> `public-page` and `admin-dashboard` are plain static HTML files.
+> They can be opened directly in a browser during development.
+> In production, serve them via a static host or a simple file server.
 
 ---
 
 ## Phase 1 — Project Bootstrap
 
-### Step 1.1 — Initialize the project
+### Step 1.1 — Create root folder and `.gitignore`
 
 ```bash
 mkdir url-shortener && cd url-shortener
-npm init -y
-npm install express mongoose nanoid dotenv
-npm install --save-dev nodemon
 ```
 
-### Step 1.2 — Add `.gitignore`
-
-Create `.gitignore` with the following:
+Create a root `.gitignore`:
 ```
 node_modules/
 .env
 ```
 
-### Step 1.3 — Create `.env` and `.env.example`
+### Step 1.2 — Initialize the backend
 
-**`.env`** (never commit this):
+```bash
+mkdir backend && cd backend
+npm init -y
+npm install express mongoose nanoid dotenv
+npm install --save-dev nodemon
+```
+
+### Step 1.3 — Create `backend/.env` and `backend/.env.example`
+
+**`backend/.env`** (never commit this):
 ```
 PORT=3000
 MONGO_URI=mongodb://localhost:27017/urlshortener
@@ -75,7 +90,7 @@ BASE_URL=http://localhost:3000
 ADMIN_API_KEY=your-secret-admin-key-change-this
 ```
 
-**`.env.example`** (commit this):
+**`backend/.env.example`** (commit this):
 ```
 PORT=3000
 MONGO_URI=mongodb://localhost:27017/urlshortener
@@ -83,7 +98,7 @@ BASE_URL=http://localhost:3000
 ADMIN_API_KEY=your-secret-admin-key-change-this
 ```
 
-### Step 1.4 — Add npm scripts to `package.json`
+### Step 1.4 — Add npm scripts to `backend/package.json`
 
 ```json
 "scripts": {
@@ -92,11 +107,19 @@ ADMIN_API_KEY=your-secret-admin-key-change-this
 }
 ```
 
+### Step 1.5 — Create the frontend folders
+
+```bash
+# from the root url-shortener/ directory
+mkdir public-page
+mkdir admin-dashboard
+```
+
 ---
 
 ## Phase 2 — MongoDB via Docker
 
-### Step 2.1 — Create `docker-compose.yml`
+### Step 2.1 — Create `docker-compose.yml` at the project root
 
 ```yaml
 version: "3.8"
@@ -114,20 +137,24 @@ volumes:
   mongo_data:
 ```
 
+> Place this at `url-shortener/docker-compose.yml` — the root level, not inside `backend/`.
+> This keeps the database concern separate from the application code.
+
 ### Step 2.2 — Start MongoDB
 
 ```bash
+# Run from url-shortener/ root
 docker compose up -d
 ```
 
 > Verify it's running: `docker ps` — you should see `urlshortener-mongo` listed.
-> The `MONGO_URI` in `.env` already points to this container.
+> The `MONGO_URI` in `backend/.env` already points to this container.
 
 ---
 
 ## Phase 3 — Database Model
 
-### Step 3.1 — Create `models/Url.js`
+### Step 3.1 — Create `backend/models/Url.js`
 
 Define a Mongoose schema with the following fields:
 
@@ -148,7 +175,7 @@ Define a Mongoose schema with the following fields:
 
 ## Phase 4 — Middleware
 
-### Step 4.1 — Create `middleware/adminAuth.js`
+### Step 4.1 — Create `backend/middleware/adminAuth.js`
 
 This middleware protects all `/admin` routes.
 
@@ -162,7 +189,7 @@ Logic:
 
 ## Phase 5 — Controllers
 
-### Step 5.1 — Create `controllers/publicController.js`
+### Step 5.1 — Create `backend/controllers/publicController.js`
 
 Implement the following functions:
 
@@ -192,7 +219,7 @@ Implement the following functions:
 
 ---
 
-### Step 5.2 — Create `controllers/adminController.js`
+### Step 5.2 — Create `backend/controllers/adminController.js`
 
 Implement the following functions:
 
@@ -232,7 +259,7 @@ Implement the following functions:
 
 ## Phase 6 — Routes
 
-### Step 6.1 — Create `routes/public.js`
+### Step 6.1 — Create `backend/routes/public.js`
 
 | Method | Path | Controller Function |
 |---|---|---|
@@ -240,7 +267,7 @@ Implement the following functions:
 | POST | `/shorten/custom` | `createCustomShortUrl` |
 | GET | `/:code` | `redirectToUrl` |
 
-### Step 6.2 — Create `routes/admin.js`
+### Step 6.2 — Create `backend/routes/admin.js`
 
 Apply `adminAuth` middleware to **all routes in this file** using `router.use(adminAuth)`.
 
@@ -256,34 +283,43 @@ Apply `adminAuth` middleware to **all routes in this file** using `router.use(ad
 
 ## Phase 7 — Main Server
 
-### Step 7.1 — Create `server.js`
+### Step 7.1 — Create `backend/server.js`
 
 1. Load `dotenv`.
 2. Connect to MongoDB using `MONGO_URI`. Log success or exit process on failure.
 3. Initialize Express app.
 4. Add middleware:
    - `express.json()` for JSON body parsing.
-   - `express.static("public")` to serve the frontend files.
+   - `cors()` — install `npm install cors` and enable it so the separate frontend pages can call the API from a different origin (e.g. opened as a local file or served on a different port).
 5. Mount routes:
+   - Admin routes at `/` (paths already include `/admin` prefix)
    - Public routes at `/`
-   - Admin routes at `/`  (paths already include `/admin` prefix)
 6. Add a global error handler as the last middleware:
    - Catch any unhandled errors, log them, and return `500 { error: "Internal Server Error" }`.
 7. Start listening on `process.env.PORT`.
 
-**Important**: Mount the public router **after** the admin router so `/:code` wildcard doesn't swallow `/admin/*` routes.
+**Important notes:**
+- Mount the admin router **before** the public router so `/:code` wildcard doesn't swallow `/admin/*` routes.
+- Do **not** use `express.static` — the frontend folders are completely separate and not served by this Express app.
+- The backend is API-only. It returns JSON for all routes except `/:code` which issues a redirect.
 
 ---
 
-## Phase 8 — Frontend: URL Submission Page
+## Phase 8 — Public Page: URL Submission
 
-### Step 8.1 — Create `public/index.html`
+### Step 8.1 — Create `public-page/index.html`
+
+This is a standalone static HTML file. It communicates with the backend via `fetch()`.
 
 **Design**: Dark, minimal, typographic. Single centered card on a dark background.
 
+**Configuration:**
+- Define a `const API_BASE = "http://localhost:3000"` variable at the top of the script block.
+- All `fetch()` calls must use this variable so it's easy to update when deploying.
+
 **UI Elements:**
 - Page title: `"Paste your URL here"`
-- A single full-width text input placeholder: `"https://your-long-url.com/..."`
+- A single full-width text input, placeholder: `"https://your-long-url.com/..."`
 - A `"Shorten"` button
 - A result area (hidden by default) that shows:
   - The generated short URL as a clickable link
@@ -293,36 +329,44 @@ Apply `adminAuth` middleware to **all routes in this file** using `router.use(ad
 **Behavior (Vanilla JS):**
 1. On button click or `Enter` keypress, read the input value.
 2. Basic client-side validation: check if the value starts with `http://` or `https://`. Show inline error if not.
-3. POST to `/shorten` with `{ originalUrl }` as JSON body.
+3. `POST` to `${API_BASE}/shorten` with `{ originalUrl }` as JSON body, `Content-Type: application/json`.
 4. On success → show the short URL result area with the returned `shortUrl`.
 5. On error → show the error message from the API response.
 6. Copy button uses `navigator.clipboard.writeText()`.
 
+**Development**: Open `public-page/index.html` directly in a browser. No server needed for this file.
+
 ---
 
-## Phase 9 — Frontend: Admin Dashboard
+## Phase 9 — Admin Dashboard
 
-### Step 9.1 — Create `public/admin/index.html`
+### Step 9.1 — Create `admin-dashboard/index.html`
 
-**Design**: Dark utilitarian dashboard. Table-based layout. Sidebar or top nav with sections.
+This is a standalone static HTML file. It communicates with the backend via `fetch()`.
+
+**Design**: Dark utilitarian dashboard. Table-based layout. Top nav with Refresh and Logout buttons.
+
+**Configuration:**
+- Define a `const API_BASE = "http://localhost:3000"` variable at the top of the script block.
+- All `fetch()` calls must use this variable and include the `x-admin-key` header.
 
 **Authentication UI:**
-- On page load, check `localStorage` for a saved admin key.
-- If not present, show a full-screen overlay with a password/key input and `"Unlock"` button.
+- On page load, check `localStorage` for a saved admin key under the key `"adminKey"`.
+- If not present, show a full-screen overlay with a key input and `"Unlock"` button.
 - On submit, store the key in `localStorage` and proceed to load the dashboard.
-- All API calls must include the key as the `x-admin-key` header.
+- All API calls include the key as the `x-admin-key` header.
 - If any API call returns `401`, clear `localStorage` and show the key prompt again.
 
 **Dashboard Sections:**
 
 #### Section 1 — Global Stats (top of page)
-Fetch from `GET /admin/stats`. Display as stat cards:
+Fetch from `GET ${API_BASE}/admin/stats`. Display as stat cards:
 - Total URLs created
 - Total clicks across all URLs
 - Most clicked URL (shortCode + click count)
 
 #### Section 2 — All URLs Table
-Fetch from `GET /admin/urls`. Display a table with columns:
+Fetch from `GET ${API_BASE}/admin/urls`. Display a table with columns:
 - Short Code
 - Original URL (truncated to 50 chars with full URL on hover via `title` attribute)
 - Clicks
@@ -332,17 +376,17 @@ Fetch from `GET /admin/urls`. Display a table with columns:
 
 **Delete flow:**
 - On `[Delete]` click → show a `confirm()` dialog: `"Delete this short URL? This cannot be undone."`
-- If confirmed → send `DELETE /admin/urls/:code` with the admin key header.
+- If confirmed → send `DELETE ${API_BASE}/admin/urls/:code` with the admin key header.
 - On success → remove the row from the table without a full page reload.
 
 **Edit flow:**
 - On `[Edit]` click → replace the Original URL cell with an `<input>` pre-filled with the current URL and a `[Save]` button.
-- On `[Save]` → send `PATCH /admin/urls/:code` with `{ originalUrl: newValue }`.
+- On `[Save]` → send `PATCH ${API_BASE}/admin/urls/:code` with `{ originalUrl: newValue }`.
 - On success → update the cell value and restore the display.
 
 #### Section 3 — URL Detail / Stats Modal
 - Clicking a short code in the table opens a modal.
-- Fetch from `GET /admin/urls/:code/stats`.
+- Fetch from `GET ${API_BASE}/admin/urls/:code/stats`.
 - Display: full original URL, short code, total clicks, created at, last accessed.
 
 **General Dashboard Behavior:**
@@ -351,14 +395,16 @@ Fetch from `GET /admin/urls`. Display a table with columns:
 - Add a `"Refresh"` button that re-fetches all data.
 - Add a `"Logout"` button that clears `localStorage` and shows the key prompt.
 
+**Development**: Open `admin-dashboard/index.html` directly in a browser. No server needed for this file.
+
 ---
 
 ## Phase 10 — Safety & Security Checklist
 
 Verify each of the following before considering the implementation complete:
 
-- [ ] `ADMIN_API_KEY` is read from `.env` only — never hardcoded.
-- [ ] `.env` is listed in `.gitignore`.
+- [ ] `ADMIN_API_KEY` is read from `backend/.env` only — never hardcoded.
+- [ ] `backend/.env` is listed in `.gitignore`.
 - [ ] All `/admin/*` routes are protected by `adminAuth` middleware.
 - [ ] URL validation rejects non-http/https protocols on both `createShortUrl` and `createCustomShortUrl`.
 - [ ] Custom slugs are validated against a regex — no arbitrary strings accepted.
@@ -366,14 +412,21 @@ Verify each of the following before considering the implementation complete:
 - [ ] `shortCode` field in MongoDB has `unique: true` and `index: true`.
 - [ ] `nanoid` collision is handled with a retry loop.
 - [ ] Global error handler catches unhandled errors and never leaks stack traces to the client.
-- [ ] `express.static` serves only the `public/` directory.
+- [ ] `cors` middleware is enabled in `backend/server.js` so the static pages can reach the API.
+- [ ] `API_BASE` is defined at the top of both frontend HTML files — not scattered across `fetch()` calls.
 - [ ] Admin key in the browser is stored in `localStorage` (acceptable for a personal tool) — note this is not suitable for production multi-user scenarios.
 
 ---
 
 ## Phase 11 — Smoke Tests (Manual)
 
-After implementation, test the following manually or with a tool like `curl` or Postman:
+Start the backend first:
+```bash
+cd backend
+npm run dev
+```
+
+Then test the following with `curl` or Postman:
 
 ```bash
 # 1. Create a short URL
