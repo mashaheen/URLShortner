@@ -22,14 +22,7 @@ async function getUrlStats(req, res, next) {
       return res.status(404).json({ error: "URL not found" });
     }
 
-    return res.status(200).json({
-      originalUrl: url.originalUrl,
-      shortCode: url.shortCode,
-      clicks: url.clicks,
-      lastAccessed: url.lastAccessed,
-      createdAt: url.createdAt,
-      customSlug: url.customSlug,
-    });
+    return res.status(200).json(url);
   } catch (error) {
     return next(error);
   }

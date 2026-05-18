@@ -10,10 +10,12 @@ const adminAuth = require("../middleware/adminAuth");
 
 const router = express.Router();
 
-router.get("/urls", adminAuth, getAllUrls);
-router.get("/urls/:code/stats", adminAuth, getUrlStats);
-router.delete("/urls/:code", adminAuth, deleteUrl);
-router.patch("/urls/:code", adminAuth, updateUrl);
-router.get("/stats", adminAuth, getGlobalStats);
+router.use(adminAuth);
+
+router.get("/urls", getAllUrls);
+router.get("/urls/:code/stats", getUrlStats);
+router.delete("/urls/:code", deleteUrl);
+router.patch("/urls/:code", updateUrl);
+router.get("/stats", getGlobalStats);
 
 module.exports = router;
