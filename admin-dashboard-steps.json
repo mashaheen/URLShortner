@@ -1,0 +1,231 @@
+{
+  "source": "url-shortener-plan.md",
+  "feature": "Admin Dashboard",
+  "beforeStartingEachStep": {
+    "instruction": "Before starting any step, check both referenced session summary files and confirm the current project state matches their completed and remaining work.",
+    "references": [
+      "backend-session-summary.json",
+      "public-page-session-summary.json"
+    ]
+  },
+  "steps": [
+    {
+      "phase": "Phase 1 — Project Bootstrap",
+      "step": "Step 1.5 — Create the frontend folders",
+      "tasks": [
+        "Create the admin-dashboard folder at the project root."
+      ],
+      "commands": [
+        "mkdir admin-dashboard"
+      ]
+    },
+    {
+      "phase": "Phase 4 — Middleware",
+      "step": "Step 4.1 — Create backend/middleware/adminAuth.js",
+      "tasks": [
+        "Create middleware that protects all /admin routes.",
+        "Read the x-admin-key header from each incoming request.",
+        "Compare the header value to process.env.ADMIN_API_KEY.",
+        "Call next() when the key matches.",
+        "Return 401 Unauthorized with a JSON error message when the key is missing or invalid."
+      ]
+    },
+    {
+      "phase": "Phase 5 — Controllers",
+      "step": "Step 5.2 — Create backend/controllers/adminController.js",
+      "tasks": [
+        {
+          "function": "getAllUrls(req, res)",
+          "requirements": [
+            "Query all documents from the Url collection.",
+            "Support optional query param ?sort=clicks or ?sort=createdAt.",
+            "Default sorting should be createdAt descending.",
+            "Return 200 with an array of all URL documents."
+          ]
+        },
+        {
+          "function": "getUrlStats(req, res)",
+          "requirements": [
+            "Read code from req.params.",
+            "Find the document by shortCode.",
+            "Return 404 if not found.",
+            "Return 200 with the full document including originalUrl, shortCode, clicks, lastAccessed, createdAt, and customSlug."
+          ]
+        },
+        {
+          "function": "deleteUrl(req, res)",
+          "requirements": [
+            "Read code from req.params.",
+            "Find and delete the URL by shortCode.",
+            "Return 404 if not found.",
+            "Return 200 with { \"message\": \"Deleted successfully\" }."
+          ]
+        },
+        {
+          "function": "updateUrl(req, res)",
+          "requirements": [
+            "Read code from req.params and originalUrl from req.body.",
+            "Validate the new originalUrl using the same validation as createShortUrl.",
+            "Find the URL by shortCode and update originalUrl.",
+            "Return 404 if not found.",
+            "Return 200 with the updated document."
+          ]
+        },
+        {
+          "function": "getGlobalStats(req, res)",
+          "requirements": [
+            "Calculate totalUrls as the count of all documents.",
+            "Calculate totalClicks as the sum of all clicks fields.",
+            "Return topUrls as the top 5 documents sorted by clicks descending.",
+            "Return recentUrls as the last 5 documents sorted by createdAt descending.",
+            "Return 200 with all stats in one JSON object."
+          ]
+        }
+      ]
+    },
+    {
+      "phase": "Phase 6 — Routes",
+      "step": "Step 6.2 — Create backend/routes/admin.js",
+      "tasks": [
+        "Apply adminAuth middleware to all routes in this file using router.use(adminAuth).",
+        "Add GET /admin/urls mapped to getAllUrls.",
+        "Add GET /admin/urls/:code/stats mapped to getUrlStats.",
+        "Add DELETE /admin/urls/:code mapped to deleteUrl.",
+        "Add PATCH /admin/urls/:code mapped to updateUrl.",
+        "Add GET /admin/stats mapped to getGlobalStats."
+      ],
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/admin/urls",
+          "controller": "getAllUrls"
+        },
+        {
+          "method": "GET",
+          "path": "/admin/urls/:code/stats",
+          "controller": "getUrlStats"
+        },
+        {
+          "method": "DELETE",
+          "path": "/admin/urls/:code",
+          "controller": "deleteUrl"
+        },
+        {
+          "method": "PATCH",
+          "path": "/admin/urls/:code",
+          "controller": "updateUrl"
+        },
+        {
+          "method": "GET",
+          "path": "/admin/stats",
+          "controller": "getGlobalStats"
+        }
+      ]
+    },
+    {
+      "phase": "Phase 7 — Main Server",
+      "step": "Step 7.1 — Create backend/server.js",
+      "tasks": [
+        "Enable cors middleware so the standalone admin dashboard can call the API from another origin or local file.",
+        "Mount admin routes at / before public routes so /:code does not swallow /admin/* routes.",
+        "Do not serve admin-dashboard through Express; keep the backend API-only."
+      ]
+    },
+    {
+      "phase": "Phase 9 — Admin Dashboard",
+      "step": "Step 9.1 — Create admin-dashboard/index.html",
+      "tasks": [
+        "Create a standalone static HTML file that communicates with the backend via fetch().",
+        "Use a dark utilitarian dashboard design with a table-based layout.",
+        "Add a top nav with Refresh and Logout buttons.",
+        "Define const API_BASE = \"http://localhost:3000\" at the top of the script block.",
+        "Use API_BASE for all fetch() calls.",
+        "Include the x-admin-key header in all API calls."
+      ],
+      "authenticationUi": [
+        "On page load, check localStorage for a saved admin key under adminKey.",
+        "If no key is present, show a full-screen overlay with a key input and Unlock button.",
+        "On submit, store the key in localStorage and load the dashboard.",
+        "If any API call returns 401, clear localStorage and show the key prompt again."
+      ],
+      "sections": [
+        {
+          "name": "Global Stats",
+          "api": "GET ${API_BASE}/admin/stats",
+          "display": [
+            "Total URLs created",
+            "Total clicks across all URLs",
+            "Most clicked URL with shortCode and click count"
+          ]
+        },
+        {
+          "name": "All URLs Table",
+          "api": "GET ${API_BASE}/admin/urls",
+          "columns": [
+            "Short Code",
+            "Original URL truncated to 50 chars with full URL in title attribute",
+            "Clicks",
+            "Created At formatted date",
+            "Last Accessed formatted date or Never",
+            "Actions with Edit and Delete buttons"
+          ],
+          "deleteFlow": [
+            "On Delete click, show confirm dialog: Delete this short URL? This cannot be undone.",
+            "If confirmed, send DELETE ${API_BASE}/admin/urls/:code with the admin key header.",
+            "On success, remove the row from the table without a full page reload."
+          ],
+          "editFlow": [
+            "On Edit click, replace the Original URL cell with an input pre-filled with the current URL and a Save button.",
+            "On Save, send PATCH ${API_BASE}/admin/urls/:code with { originalUrl: newValue }.",
+            "On success, update the cell value and restore the display."
+          ]
+        },
+        {
+          "name": "URL Detail / Stats Modal",
+          "api": "GET ${API_BASE}/admin/urls/:code/stats",
+          "behavior": [
+            "Clicking a short code in the table opens a modal.",
+            "Fetch detail stats for that short code.",
+            "Display full original URL, short code, total clicks, created at, and last accessed."
+          ]
+        }
+      ],
+      "generalBehavior": [
+        "Show a loading spinner while fetching data.",
+        "Show a top banner error message if any fetch fails.",
+        "Refresh button re-fetches all data.",
+        "Logout button clears localStorage and shows the key prompt.",
+        "During development, open admin-dashboard/index.html directly in a browser. No server is needed for this file."
+      ]
+    },
+    {
+      "phase": "Phase 10 — Safety & Security Checklist",
+      "step": "Admin dashboard related checks",
+      "tasks": [
+        "ADMIN_API_KEY is read from backend/.env only and never hardcoded.",
+        "backend/.env is listed in .gitignore.",
+        "All /admin/* routes are protected by adminAuth middleware.",
+        "cors middleware is enabled in backend/server.js so the static admin dashboard can reach the API.",
+        "API_BASE is defined at the top of admin-dashboard/index.html and is not scattered across fetch() calls.",
+        "Admin key in the browser is stored in localStorage, acceptable only for a personal tool and not suitable for production multi-user scenarios."
+      ]
+    },
+    {
+      "phase": "Phase 11 — Smoke Tests (Manual)",
+      "step": "Admin dashboard API smoke tests",
+      "tasks": [
+        "Start the backend with npm run dev from the backend folder.",
+        "Verify GET /admin/urls returns data when x-admin-key is provided.",
+        "Verify GET /admin/stats returns global stats when x-admin-key is provided.",
+        "Verify DELETE /admin/urls/<code> deletes a URL when x-admin-key is provided.",
+        "Verify accessing /admin/urls without a key returns 401."
+      ],
+      "commands": [
+        "curl http://localhost:3000/admin/urls -H \"x-admin-key: your-secret-admin-key-change-this\"",
+        "curl http://localhost:3000/admin/stats -H \"x-admin-key: your-secret-admin-key-change-this\"",
+        "curl -X DELETE http://localhost:3000/admin/urls/<code> -H \"x-admin-key: your-secret-admin-key-change-this\"",
+        "curl http://localhost:3000/admin/urls"
+      ]
+    }
+  ]
+}
