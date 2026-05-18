@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Dashboard</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #070a0f;
+      color: #d8dee9;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid #334155;
+      border-radius: 8px;
+      background: #111827;
+      color: #e5e7eb;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: #64748b;
+      background: #1f2937;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      background: #0f172a;
+      color: #f8fafc;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 28px;
+      border-bottom: 1px solid #1f2937;
+      background: rgba(7, 10, 15, 0.94);
+      backdrop-filter: blur(16px);
+    }
+
+    .brand h1 {
+      margin: 0;
+      color: #f8fafc;
+      font-size: 20px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .brand p {
+      margin: 4px 0 0;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    .nav-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .nav-actions button,
+    .action-button {
+      padding: 9px 12px;
+    }
+
+    .danger {
+      color: #fecaca;
+      border-color: #7f1d1d;
+      background: #450a0a;
+    }
+
+    .primary {
+      color: #e0f2fe;
+      border-color: #0369a1;
+      background: #075985;
+    }
+
+    main {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    .banner {
+      display: none;
+      margin-bottom: 18px;
+      padding: 12px 14px;
+      border: 1px solid #7f1d1d;
+      border-radius: 10px;
+      background: #2f1111;
+      color: #fecaca;
+    }
+
+    .banner.visible {
+      display: block;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      min-height: 120px;
+      padding: 18px;
+      border: 1px solid #1f2937;
+      border-radius: 14px;
+      background: linear-gradient(145deg, #0f172a, #111827);
+    }
+
+    .stat-card span {
+      display: block;
+      color: #94a3b8;
+      font-size: 12px;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+
+    .stat-card strong {
+      display: block;
+      margin-top: 12px;
+      color: #f8fafc;
+      font-size: clamp(26px, 4vw, 38px);
+      line-height: 1;
+    }
+
+    .stat-card p {
+      margin: 12px 0 0;
+      color: #cbd5e1;
+      overflow-wrap: anywhere;
+    }
+
+    .panel {
+      border: 1px solid #1f2937;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #0b1120;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 16px 18px;
+      border-bottom: 1px solid #1f2937;
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      color: #f8fafc;
+      font-size: 16px;
+    }
+
+    .loading {
+      display: none;
+      align-items: center;
+      gap: 9px;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .loading.visible {
+      display: flex;
+    }
+
+    .spinner {
+      width: 15px;
+      height: 15px;
+      border: 2px solid #334155;
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 850px;
+    }
+
+    th,
+    td {
+      padding: 13px 14px;
+      border-bottom: 1px solid #1f2937;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      color: #94a3b8;
+      background: #0f172a;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    td {
+      color: #d8dee9;
+      font-size: 14px;
+    }
+
+    tbody tr:hover {
+      background: #101827;
+    }
+
+    .short-code {
+      border: 0;
+      padding: 0;
+      color: #67e8f9;
+      background: transparent;
+      font-weight: 700;
+      text-decoration: underline;
+    }
+
+    .url-cell {
+      max-width: 360px;
+      overflow-wrap: anywhere;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .edit-row {
+      display: flex;
+      min-width: 280px;
+      gap: 8px;
+    }
+
+    .edit-row input {
+      padding: 8px 10px;
+    }
+
+    .empty {
+      padding: 24px;
+      color: #94a3b8;
+      text-align: center;
+    }
+
+    .overlay,
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      place-items: center;
+      padding: 22px;
+      background: rgba(3, 7, 18, 0.86);
+    }
+
+    .overlay.visible,
+    .modal-backdrop.visible {
+      display: grid;
+    }
+
+    .unlock-card,
+    .modal {
+      width: min(100%, 460px);
+      border: 1px solid #334155;
+      border-radius: 16px;
+      background: #0b1120;
+      box-shadow: 0 24px 90px rgba(0, 0, 0, 0.55);
+    }
+
+    .unlock-card {
+      padding: 26px;
+    }
+
+    .unlock-card h2,
+    .modal h2 {
+      margin: 0;
+      color: #f8fafc;
+    }
+
+    .unlock-card p {
+      margin: 10px 0 18px;
+      color: #94a3b8;
+    }
+
+    .unlock-card input {
+      padding: 12px 13px;
+    }
+
+    .unlock-card button {
+      width: 100%;
+      margin-top: 12px;
+      padding: 12px 13px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 18px;
+      border-bottom: 1px solid #1f2937;
+    }
+
+    .modal-body {
+      padding: 18px;
+    }
+
+    .detail-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .detail-list div {
+      padding: 12px;
+      border: 1px solid #1f2937;
+      border-radius: 10px;
+      background: #0f172a;
+    }
+
+    .detail-list span {
+      display: block;
+      margin-bottom: 6px;
+      color: #94a3b8;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .detail-list strong {
+      color: #f8fafc;
+      overflow-wrap: anywhere;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 760px) {
+      .topbar,
+      .panel-header {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .nav-actions {
+        width: 100%;
+      }
+
+      .nav-actions button {
+        flex: 1;
+      }
+
+      main {
+        padding: 18px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <h1>Admin Dashboard</h1>
+      <p>Standalone URL shortener control panel</p>
+    </div>
+    <nav class="nav-actions" aria-label="Dashboard actions">
+      <button id="refreshButton" type="button">Refresh</button>
+      <button id="logoutButton" class="danger" type="button">Logout</button>
+    </nav>
+  </header>
+
+  <main>
+    <div id="errorBanner" class="banner" role="alert"></div>
+
+    <section class="stats-grid" aria-label="Global stats">
+      <article class="stat-card">
+        <span>Total URLs created</span>
+        <strong id="totalUrls">0</strong>
+      </article>
+      <article class="stat-card">
+        <span>Total clicks across all URLs</span>
+        <strong id="totalClicks">0</strong>
+      </article>
+      <article class="stat-card">
+        <span>Most clicked URL</span>
+        <p id="mostClicked">No URLs yet</p>
+      </article>
+    </section>
+
+    <section class="panel" aria-labelledby="urlsHeading">
+      <div class="panel-header">
+        <h2 id="urlsHeading">All URLs</h2>
+        <div id="loading" class="loading" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          Loading data
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Short Code</th>
+              <th>Original URL</th>
+              <th>Clicks</th>
+              <th>Created At</th>
+              <th>Last Accessed</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="urlsTableBody"></tbody>
+        </table>
+      </div>
+      <div id="emptyState" class="empty" hidden>No URLs found.</div>
+    </section>
+  </main>
+
+  <div id="unlockOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="unlockHeading">
+    <form id="unlockForm" class="unlock-card">
+      <h2 id="unlockHeading">Enter admin key</h2>
+      <p>Provide the backend admin key to load dashboard data.</p>
+      <input id="adminKeyInput" type="password" autocomplete="current-password" placeholder="x-admin-key" required>
+      <button class="primary" type="submit">Unlock</button>
+    </form>
+  </div>
+
+  <div id="statsModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalHeading">
+    <section class="modal">
+      <div class="modal-header">
+        <h2 id="modalHeading">URL Details</h2>
+        <button id="closeModalButton" type="button">Close</button>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
+    </section>
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:3000";
+
+    const adminKeyStorageName = "adminKey";
+    const errorBanner = document.getElementById("errorBanner");
+    const loading = document.getElementById("loading");
+    const refreshButton = document.getElementById("refreshButton");
+    const logoutButton = document.getElementById("logoutButton");
+    const totalUrls = document.getElementById("totalUrls");
+    const totalClicks = document.getElementById("totalClicks");
+    const mostClicked = document.getElementById("mostClicked");
+    const urlsTableBody = document.getElementById("urlsTableBody");
+    const emptyState = document.getElementById("emptyState");
+    const unlockOverlay = document.getElementById("unlockOverlay");
+    const unlockForm = document.getElementById("unlockForm");
+    const adminKeyInput = document.getElementById("adminKeyInput");
+    const statsModal = document.getElementById("statsModal");
+    const modalBody = document.getElementById("modalBody");
+    const closeModalButton = document.getElementById("closeModalButton");
+
+    let urls = [];
+
+    function getAdminKey() {
+      return localStorage.getItem(adminKeyStorageName);
+    }
+
+    function showError(message) {
+      errorBanner.textContent = message;
+      errorBanner.classList.add("visible");
+    }
+
+    function clearError() {
+      errorBanner.textContent = "";
+      errorBanner.classList.remove("visible");
+    }
+
+    function setLoading(isLoading) {
+      loading.classList.toggle("visible", isLoading);
+      refreshButton.disabled = isLoading;
+    }
+
+    function showUnlock() {
+      localStorage.removeItem(adminKeyStorageName);
+      unlockOverlay.classList.add("visible");
+      adminKeyInput.value = "";
+      adminKeyInput.focus();
+    }
+
+    function hideUnlock() {
+      unlockOverlay.classList.remove("visible");
+    }
+
+    async function adminFetch(path, options = {}) {
+      const response = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers: {
+          ...(options.headers || {}),
+          "x-admin-key": getAdminKey(),
+        },
+      });
+
+      if (response.status === 401) {
+        showUnlock();
+        throw new Error("Unauthorized. Enter a valid admin key.");
+      }
+
+      if (!response.ok) {
+        let message = "Request failed";
+
+        try {
+          const data = await response.json();
+          message = data.error || message;
+        } catch {
+          message = response.statusText || message;
+        }
+
+        throw new Error(message);
+      }
+
+      return response.json();
+    }
+
+    function formatDate(value) {
+      if (!value) {
+        return "Never";
+      }
+
+      return new Date(value).toLocaleString();
+    }
+
+    function truncateUrl(value) {
+      if (value.length <= 50) {
+        return value;
+      }
+
+      return `${value.slice(0, 50)}...`;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"]/g, (character) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+      }[character]));
+    }
+
+    function renderStats(stats) {
+      const topUrl = stats.topUrls && stats.topUrls[0];
+
+      totalUrls.textContent = stats.totalUrls || 0;
+      totalClicks.textContent = stats.totalClicks || 0;
+      mostClicked.textContent = topUrl
+        ? `${topUrl.shortCode} - ${topUrl.clicks} clicks`
+        : "No URLs yet";
+    }
+
+    function renderTable() {
+      urlsTableBody.textContent = "";
+      emptyState.hidden = urls.length > 0;
+
+      urls.forEach((url) => {
+        const row = document.createElement("tr");
+        row.dataset.code = url.shortCode;
+
+        row.innerHTML = `
+          <td><button class="short-code" type="button">${escapeHtml(url.shortCode)}</button></td>
+          <td class="url-cell" title="${escapeHtml(url.originalUrl)}">${escapeHtml(truncateUrl(url.originalUrl))}</td>
+          <td>${escapeHtml(url.clicks)}</td>
+          <td>${formatDate(url.createdAt)}</td>
+          <td>${formatDate(url.lastAccessed)}</td>
+          <td>
+            <div class="actions">
+              <button class="action-button edit-button" type="button">Edit</button>
+              <button class="action-button danger delete-button" type="button">Delete</button>
+            </div>
+          </td>
+        `;
+
+        row.querySelector(".short-code").addEventListener("click", () => openStatsModal(url.shortCode));
+        row.querySelector(".edit-button").addEventListener("click", () => startEdit(row, url));
+        row.querySelector(".delete-button").addEventListener("click", () => deleteUrl(row, url.shortCode));
+        urlsTableBody.appendChild(row);
+      });
+    }
+
+    async function loadDashboard() {
+      if (!getAdminKey()) {
+        showUnlock();
+        return;
+      }
+
+      clearError();
+      hideUnlock();
+      setLoading(true);
+
+      try {
+        const [stats, allUrls] = await Promise.all([
+          adminFetch("/admin/stats"),
+          adminFetch("/admin/urls"),
+        ]);
+
+        urls = allUrls;
+        renderStats(stats);
+        renderTable();
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function deleteUrl(row, code) {
+      if (!confirm("Delete this short URL? This cannot be undone.")) {
+        return;
+      }
+
+      clearError();
+
+      try {
+        await adminFetch(`/admin/urls/${encodeURIComponent(code)}`, { method: "DELETE" });
+        urls = urls.filter((url) => url.shortCode !== code);
+        row.remove();
+        emptyState.hidden = urls.length > 0;
+        renderStats(await adminFetch("/admin/stats"));
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+
+    function startEdit(row, url) {
+      const originalUrlCell = row.children[1];
+      originalUrlCell.innerHTML = `
+        <div class="edit-row">
+          <input type="url" value="${escapeHtml(url.originalUrl)}" aria-label="Original URL">
+          <button class="action-button primary save-button" type="button">Save</button>
+        </div>
+      `;
+
+      const input = originalUrlCell.querySelector("input");
+      originalUrlCell.querySelector(".save-button").addEventListener("click", () => saveEdit(row, url, input.value));
+      input.focus();
+    }
+
+    async function saveEdit(row, url, newValue) {
+      clearError();
+
+      try {
+        const updatedUrl = await adminFetch(`/admin/urls/${encodeURIComponent(url.shortCode)}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ originalUrl: newValue }),
+        });
+
+        url.originalUrl = updatedUrl.originalUrl;
+        const originalUrlCell = row.children[1];
+        originalUrlCell.title = updatedUrl.originalUrl;
+        originalUrlCell.textContent = truncateUrl(updatedUrl.originalUrl);
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+
+    async function openStatsModal(code) {
+      clearError();
+      statsModal.classList.add("visible");
+      modalBody.innerHTML = `<div class="loading visible"><span class="spinner" aria-hidden="true"></span>Loading stats</div>`;
+
+      try {
+        const url = await adminFetch(`/admin/urls/${encodeURIComponent(code)}/stats`);
+        modalBody.innerHTML = `
+          <div class="detail-list">
+            <div><span>Original URL</span><strong>${escapeHtml(url.originalUrl)}</strong></div>
+            <div><span>Short Code</span><strong>${escapeHtml(url.shortCode)}</strong></div>
+            <div><span>Total Clicks</span><strong>${escapeHtml(url.clicks)}</strong></div>
+            <div><span>Created At</span><strong>${formatDate(url.createdAt)}</strong></div>
+            <div><span>Last Accessed</span><strong>${formatDate(url.lastAccessed)}</strong></div>
+          </div>
+        `;
+      } catch (error) {
+        modalBody.textContent = error.message;
+        showError(error.message);
+      }
+    }
+
+    unlockForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      localStorage.setItem(adminKeyStorageName, adminKeyInput.value);
+      loadDashboard();
+    });
+
+    refreshButton.addEventListener("click", loadDashboard);
+
+    logoutButton.addEventListener("click", () => {
+      urls = [];
+      urlsTableBody.textContent = "";
+      showUnlock();
+    });
+
+    closeModalButton.addEventListener("click", () => {
+      statsModal.classList.remove("visible");
+    });
+
+    statsModal.addEventListener("click", (event) => {
+      if (event.target === statsModal) {
+        statsModal.classList.remove("visible");
+      }
+    });
+
+    if (getAdminKey()) {
+      loadDashboard();
+    } else {
+      showUnlock();
+    }
+  </script>
+</body>
+</html>

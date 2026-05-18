@@ -1,0 +1,62 @@
+{
+  "sessionDate": "2026-05-18",
+  "scope": "admin-dashboard",
+  "source": "admin-dashboard-steps.json",
+  "completedSteps": [
+    {
+      "phase": "Phase 1 — Project Bootstrap",
+      "step": "Step 1.5 — Create the frontend folders",
+      "summary": "Created the admin-dashboard folder at the project root."
+    },
+    {
+      "phase": "Phase 4 — Middleware",
+      "step": "Step 4.1 — Create backend/middleware/adminAuth.js",
+      "summary": "Verified adminAuth middleware already protects admin routes by reading x-admin-key, comparing it to ADMIN_API_KEY, calling next() on success, and returning 401 JSON on failure."
+    },
+    {
+      "phase": "Phase 5 — Controllers",
+      "step": "Step 5.2 — Create backend/controllers/adminController.js",
+      "summary": "Verified admin controller functions and updated getUrlStats to return the full URL document."
+    },
+    {
+      "phase": "Phase 6 — Routes",
+      "step": "Step 6.2 — Create backend/routes/admin.js",
+      "summary": "Updated admin routes to apply adminAuth once with router.use(adminAuth), then mapped all required admin endpoints."
+    },
+    {
+      "phase": "Phase 7 — Main Server",
+      "step": "Step 7.1 — Create backend/server.js",
+      "summary": "Verified CORS is enabled, admin routes are mounted before public routes, and the backend does not serve admin-dashboard through Express."
+    },
+    {
+      "phase": "Phase 9 — Admin Dashboard",
+      "step": "Step 9.1 — Create admin-dashboard/index.html",
+      "summary": "Created a standalone dark admin dashboard with key-based unlock flow, global stats, URL table, edit/delete actions, stats modal, loading state, error banner, Refresh, and Logout."
+    }
+  ],
+  "filesCreated": [
+    "admin-dashboard/index.html"
+  ],
+  "filesUpdated": [
+    "backend/controllers/adminController.js",
+    "backend/routes/admin.js"
+  ],
+  "verification": [
+    "Read backend-session-summary.json and public-page-session-summary.json before each phase as requested by admin-dashboard-steps.json.",
+    "Verified backend/middleware/adminAuth.js met Phase 4 requirements without changes.",
+    "Ran node --check controllers/adminController.js after updating getUrlStats.",
+    "Ran node --check routes/admin.js after updating admin route middleware usage.",
+    "Ran node --check server.js and searched backend JavaScript for express.static, admin-dashboard, and public-page references for Phase 7.",
+    "Searched admin-dashboard/index.html for API_BASE, x-admin-key, localStorage adminKey, required admin endpoints, delete confirmation, PATCH, DELETE, loading spinner, Refresh, and Logout."
+  ],
+  "remainingSteps": [
+    {
+      "phase": "Phase 10 — Safety & Security Checklist",
+      "summary": "Admin dashboard related security checklist still needs to be reviewed as the next phase."
+    },
+    {
+      "phase": "Phase 11 — Smoke Tests (Manual)",
+      "summary": "Manual admin dashboard API smoke tests still need to be run with the backend and MongoDB available."
+    }
+  ]
+}
