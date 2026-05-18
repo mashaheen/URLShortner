@@ -1,0 +1,469 @@
+{
+  "source": "url-shortener-plan.md",
+  "scope": "backend-service",
+  "description": "Steps extracted from the implementation plan that are needed to build and verify the Express/MongoDB backend service.",
+  "techStack": {
+    "runtime": "Node.js",
+    "framework": "Express.js",
+    "database": "MongoDB via Mongoose",
+    "localDatabase": "MongoDB in Docker",
+    "shortCodeGeneration": "nanoid",
+    "environmentConfig": "dotenv",
+    "adminProtection": "Static API key via middleware"
+  },
+  "projectStructure": {
+    "rootFiles": [
+      "docker-compose.yml",
+      ".gitignore",
+      "README.md"
+    ],
+    "backendFiles": [
+      "backend/package.json",
+      "backend/.env",
+      "backend/.env.example",
+      "backend/server.js",
+      "backend/middleware/adminAuth.js",
+      "backend/models/Url.js",
+      "backend/routes/public.js",
+      "backend/routes/admin.js",
+      "backend/controllers/publicController.js",
+      "backend/controllers/adminController.js"
+    ]
+  },
+  "phases": [
+    {
+      "phase": 1,
+      "title": "Project Bootstrap",
+      "steps": [
+        {
+          "id": "1.1",
+          "title": "Create root folder and .gitignore",
+          "actions": [
+            "Create the project root folder.",
+            "Create a root .gitignore file containing node_modules/ and .env."
+          ],
+          "commands": [
+            "mkdir url-shortener && cd url-shortener"
+          ],
+          "files": [
+            {
+              "path": ".gitignore",
+              "content": "node_modules/\n.env\n"
+            }
+          ]
+        },
+        {
+          "id": "1.2",
+          "title": "Initialize the backend",
+          "actions": [
+            "Create the backend folder.",
+            "Initialize npm.",
+            "Install runtime dependencies.",
+            "Install nodemon as a development dependency."
+          ],
+          "commands": [
+            "mkdir backend && cd backend",
+            "npm init -y",
+            "npm install express mongoose nanoid dotenv cors",
+            "npm install --save-dev nodemon"
+          ]
+        },
+        {
+          "id": "1.3",
+          "title": "Create backend environment files",
+          "actions": [
+            "Create backend/.env for local secrets and runtime configuration.",
+            "Create backend/.env.example with the same keys for documentation."
+          ],
+          "files": [
+            {
+              "path": "backend/.env",
+              "commit": false,
+              "content": "PORT=3000\nMONGO_URI=mongodb://localhost:27017/urlshortener\nBASE_URL=http://localhost:3000\nADMIN_API_KEY=your-secret-admin-key-change-this\n"
+            },
+            {
+              "path": "backend/.env.example",
+              "commit": true,
+              "content": "PORT=3000\nMONGO_URI=mongodb://localhost:27017/urlshortener\nBASE_URL=http://localhost:3000\nADMIN_API_KEY=your-secret-admin-key-change-this\n"
+            }
+          ]
+        },
+        {
+          "id": "1.4",
+          "title": "Add npm scripts",
+          "actions": [
+            "Add start and dev scripts to backend/package.json."
+          ],
+          "packageJsonScripts": {
+            "start": "node server.js",
+            "dev": "nodemon server.js"
+          }
+        }
+      ]
+    },
+    {
+      "phase": 2,
+      "title": "MongoDB via Docker",
+      "steps": [
+        {
+          "id": "2.1",
+          "title": "Create docker-compose.yml",
+          "actions": [
+            "Create docker-compose.yml at the project root, not inside backend/.",
+            "Define a MongoDB 7 service named mongo with port 27017 exposed and a persistent volume."
+          ],
+          "files": [
+            {
+              "path": "docker-compose.yml",
+              "content": "version: \"3.8\"\nservices:\n  mongo:\n    image: mongo:7\n    container_name: urlshortener-mongo\n    restart: unless-stopped\n    ports:\n      - \"27017:27017\"\n    volumes:\n      - mongo_data:/data/db\n\nvolumes:\n  mongo_data:\n"
+            }
+          ]
+        },
+        {
+          "id": "2.2",
+          "title": "Start MongoDB",
+          "actions": [
+            "Run Docker Compose from the project root.",
+            "Verify the urlshortener-mongo container is running."
+          ],
+          "commands": [
+            "docker compose up -d",
+            "docker ps"
+          ]
+        }
+      ]
+    },
+    {
+      "phase": 3,
+      "title": "Database Model",
+      "steps": [
+        {
+          "id": "3.1",
+          "title": "Create backend/models/Url.js",
+          "actions": [
+            "Define a Mongoose Url schema.",
+            "Ensure shortCode is unique and indexed for fast lookups.",
+            "Use Mongoose timestamps or a manual createdAt default."
+          ],
+          "schemaFields": [
+            {
+              "name": "originalUrl",
+              "type": "String",
+              "rules": ["required"]
+            },
+            {
+              "name": "shortCode",
+              "type": "String",
+              "rules": ["required", "unique", "indexed"]
+            },
+            {
+              "name": "customSlug",
+              "type": "Boolean",
+              "default": false
+            },
+            {
+              "name": "clicks",
+              "type": "Number",
+              "default": 0
+            },
+            {
+              "name": "lastAccessed",
+              "type": "Date",
+              "default": null
+            },
+            {
+              "name": "createdAt",
+              "type": "Date",
+              "default": "Date.now"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "phase": 4,
+      "title": "Middleware",
+      "steps": [
+        {
+          "id": "4.1",
+          "title": "Create backend/middleware/adminAuth.js",
+          "actions": [
+            "Read the x-admin-key header from each request.",
+            "Compare the header value to process.env.ADMIN_API_KEY.",
+            "Call next() when the key matches.",
+            "Return 401 Unauthorized with a JSON error when the key is missing or invalid."
+          ]
+        }
+      ]
+    },
+    {
+      "phase": 5,
+      "title": "Controllers",
+      "steps": [
+        {
+          "id": "5.1",
+          "title": "Create backend/controllers/publicController.js",
+          "functions": [
+            {
+              "name": "createShortUrl",
+              "requirements": [
+                "Read originalUrl from req.body.",
+                "Validate originalUrl with the built-in URL constructor inside try/catch.",
+                "Reject invalid URLs with 400 and { error: \"Invalid URL\" }.",
+                "Allow only http:// and https:// protocols.",
+                "Generate a short code with nanoid(7).",
+                "Check for generated-code collisions in MongoDB and retry until unique.",
+                "Save the URL document to MongoDB.",
+                "Return 201 with { shortUrl: BASE_URL + \"/\" + shortCode, shortCode }."
+              ]
+            },
+            {
+              "name": "createCustomShortUrl",
+              "requirements": [
+                "Read originalUrl and customSlug from req.body.",
+                "Validate originalUrl using the same rules as createShortUrl.",
+                "Validate customSlug with /^[a-zA-Z0-9-]+$/ and length 3 to 30 characters.",
+                "Reject reserved slugs: admin, shorten, api.",
+                "Return 409 Conflict if customSlug already exists in MongoDB.",
+                "Save with customSlug set to true.",
+                "Return 201 with { shortUrl, shortCode: customSlug }."
+              ]
+            },
+            {
+              "name": "redirectToUrl",
+              "requirements": [
+                "Read code from req.params.",
+                "Find the matching document by shortCode.",
+                "Return 404 with a simple HTML page saying Short URL not found when missing.",
+                "When found, increment clicks by 1 and update lastAccessed to Date.now().",
+                "Save the document and redirect with status 302 to originalUrl."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "5.2",
+          "title": "Create backend/controllers/adminController.js",
+          "functions": [
+            {
+              "name": "getAllUrls",
+              "requirements": [
+                "Query all documents from the Url collection.",
+                "Support optional sort query values clicks and createdAt.",
+                "Default sorting is createdAt descending.",
+                "Return 200 with an array of URL documents."
+              ]
+            },
+            {
+              "name": "getUrlStats",
+              "requirements": [
+                "Read code from req.params.",
+                "Find the document by shortCode.",
+                "Return 404 when not found.",
+                "Return 200 with originalUrl, shortCode, clicks, lastAccessed, createdAt, and customSlug."
+              ]
+            },
+            {
+              "name": "deleteUrl",
+              "requirements": [
+                "Read code from req.params.",
+                "Find and delete by shortCode.",
+                "Return 404 when not found.",
+                "Return 200 with { message: \"Deleted successfully\" }."
+              ]
+            },
+            {
+              "name": "updateUrl",
+              "requirements": [
+                "Read code from req.params and originalUrl from req.body.",
+                "Validate the new originalUrl using the same rules as createShortUrl.",
+                "Find by shortCode and update originalUrl.",
+                "Return 404 when not found.",
+                "Return 200 with the updated document."
+              ]
+            },
+            {
+              "name": "getGlobalStats",
+              "requirements": [
+                "Calculate totalUrls as the count of all documents.",
+                "Calculate totalClicks as the sum of all clicks fields.",
+                "Return topUrls as the top 5 documents sorted by clicks descending.",
+                "Return recentUrls as the last 5 documents sorted by createdAt descending.",
+                "Return 200 with all stats in one JSON object."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "phase": 6,
+      "title": "Routes",
+      "steps": [
+        {
+          "id": "6.1",
+          "title": "Create backend/routes/public.js",
+          "routes": [
+            {
+              "method": "POST",
+              "path": "/shorten",
+              "controller": "createShortUrl"
+            },
+            {
+              "method": "POST",
+              "path": "/shorten/custom",
+              "controller": "createCustomShortUrl"
+            },
+            {
+              "method": "GET",
+              "path": "/:code",
+              "controller": "redirectToUrl"
+            }
+          ]
+        },
+        {
+          "id": "6.2",
+          "title": "Create backend/routes/admin.js",
+          "actions": [
+            "Apply adminAuth middleware to all routes in this file using router.use(adminAuth)."
+          ],
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/admin/urls",
+              "controller": "getAllUrls"
+            },
+            {
+              "method": "GET",
+              "path": "/admin/urls/:code/stats",
+              "controller": "getUrlStats"
+            },
+            {
+              "method": "DELETE",
+              "path": "/admin/urls/:code",
+              "controller": "deleteUrl"
+            },
+            {
+              "method": "PATCH",
+              "path": "/admin/urls/:code",
+              "controller": "updateUrl"
+            },
+            {
+              "method": "GET",
+              "path": "/admin/stats",
+              "controller": "getGlobalStats"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "phase": 7,
+      "title": "Main Server",
+      "steps": [
+        {
+          "id": "7.1",
+          "title": "Create backend/server.js",
+          "actions": [
+            "Load dotenv.",
+            "Connect to MongoDB using MONGO_URI.",
+            "Log MongoDB connection success or exit the process on connection failure.",
+            "Initialize the Express app.",
+            "Add express.json() middleware for JSON body parsing.",
+            "Add cors() middleware so separate frontend pages can call the API from another origin.",
+            "Mount admin routes at / before public routes.",
+            "Mount public routes at / after admin routes.",
+            "Add a global error handler as the last middleware that logs errors and returns 500 { error: \"Internal Server Error\" }.",
+            "Start listening on process.env.PORT."
+          ],
+          "importantNotes": [
+            "Mount the admin router before the public router so /:code does not swallow /admin/* routes.",
+            "Do not use express.static; the backend is API-only.",
+            "All backend routes return JSON except /:code, which redirects or returns a simple not-found HTML page."
+          ]
+        }
+      ]
+    },
+    {
+      "phase": 8,
+      "title": "Backend Safety and Security Checklist",
+      "steps": [
+        {
+          "id": "8.1",
+          "title": "Verify backend security requirements",
+          "checks": [
+            "ADMIN_API_KEY is read from backend/.env only and is never hardcoded.",
+            "backend/.env is listed in .gitignore.",
+            "All /admin/* routes are protected by adminAuth middleware.",
+            "URL validation rejects non-http/https protocols in createShortUrl and createCustomShortUrl.",
+            "Custom slugs are validated against a regex and arbitrary strings are rejected.",
+            "Reserved slugs admin, shorten, and api are blocked.",
+            "shortCode has unique: true and index: true in the MongoDB model.",
+            "nanoid collisions are handled with a retry loop.",
+            "The global error handler catches unhandled errors and does not leak stack traces to clients.",
+            "cors middleware is enabled in backend/server.js."
+          ]
+        }
+      ]
+    },
+    {
+      "phase": 9,
+      "title": "Backend Smoke Tests",
+      "steps": [
+        {
+          "id": "9.1",
+          "title": "Start the backend",
+          "commands": [
+            "cd backend",
+            "npm run dev"
+          ]
+        },
+        {
+          "id": "9.2",
+          "title": "Run manual API checks",
+          "tests": [
+            {
+              "name": "Create a short URL",
+              "command": "curl -X POST http://localhost:3000/shorten -H \"Content-Type: application/json\" -d '{\"originalUrl\": \"https://www.example.com/some/very/long/path\"}'"
+            },
+            {
+              "name": "Visit the short URL",
+              "command": "curl -L http://localhost:3000/<returned-code>"
+            },
+            {
+              "name": "Create a custom slug",
+              "command": "curl -X POST http://localhost:3000/shorten/custom -H \"Content-Type: application/json\" -d '{\"originalUrl\": \"https://example.com\", \"customSlug\": \"my-link\"}'"
+            },
+            {
+              "name": "Admin get all URLs",
+              "command": "curl http://localhost:3000/admin/urls -H \"x-admin-key: your-secret-admin-key-change-this\""
+            },
+            {
+              "name": "Admin get global stats",
+              "command": "curl http://localhost:3000/admin/stats -H \"x-admin-key: your-secret-admin-key-change-this\""
+            },
+            {
+              "name": "Admin delete a URL",
+              "command": "curl -X DELETE http://localhost:3000/admin/urls/<code> -H \"x-admin-key: your-secret-admin-key-change-this\""
+            },
+            {
+              "name": "Reject invalid URL",
+              "command": "curl -X POST http://localhost:3000/shorten -H \"Content-Type: application/json\" -d '{\"originalUrl\": \"not-a-url\"}'",
+              "expectedStatus": 400
+            },
+            {
+              "name": "Reject reserved slug",
+              "command": "curl -X POST http://localhost:3000/shorten/custom -H \"Content-Type: application/json\" -d '{\"originalUrl\": \"https://example.com\", \"customSlug\": \"admin\"}'",
+              "expectedStatus": 400
+            },
+            {
+              "name": "Reject admin access without key",
+              "command": "curl http://localhost:3000/admin/urls",
+              "expectedStatus": 401
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
