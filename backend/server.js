@@ -12,7 +12,7 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cors());
 
-app.use("/", adminRoutes);
+app.use("/admin", adminRoutes);
 app.use("/", publicRoutes);
 
 app.use((error, req, res, next) => {

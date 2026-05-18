@@ -5,22 +5,14 @@
     {
       "id": 1,
       "title": "Create frontend folder",
-      "details": [
-        "Create the public-page folder."
-      ],
-      "paths": [
-        "public-page/"
-      ]
+      "details": ["Create the public-page folder."],
+      "paths": ["public-page/"]
     },
     {
       "id": 2,
       "title": "Create page file",
-      "details": [
-        "Create public-page/index.html."
-      ],
-      "paths": [
-        "public-page/index.html"
-      ]
+      "details": ["Create public-page/index.html."],
+      "paths": ["public-page/index.html"]
     },
     {
       "id": 3,
